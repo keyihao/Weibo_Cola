@@ -328,7 +328,6 @@ class ForwardCommentLikeParser(WeiboParser):
                 date_source = dl.find('dd').find('span',attrs={'class':'fl'}).find('em',attrs={'class': 'S_txt2'})
                 date = date_source.text
             date = date.strip().strip('(').strip(')')
-            self.logger.debug('felixke debug date %s' % date)
             instance.created = self.parse_datetime(date)
             for div in dl.find_all('div'): div.extract()
             for span in dl.find_all('span'): span.extract()
