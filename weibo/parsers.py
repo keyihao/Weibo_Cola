@@ -321,8 +321,14 @@ class ForwardCommentLikeParser(WeiboParser):
 
         def set_instance(instance, dl):
             instance.avatar = dl.find('dt').find('img')['src']
-            date = dl.find('dd').find('span', attrs={'class': 'S_txt2'}).text
+            date_source = dl.find('dd').find('span', attrs={'class': 'S_txt2'})
+            if date_source is not None:
+                date = date_source.text
+            else:
+                date_source = dl.find('dd').find('span',attrs={'class':'fl'}).find('em',attrs={'class': 'S_txt2'})
+                date = date_source.text
             date = date.strip().strip('(').strip(')')
+            self.logger.debug('felixke debug date %s' % date)
             instance.created = self.parse_datetime(date)
             for div in dl.find_all('div'): div.extract()
             for span in dl.find_all('span'): span.extract()
