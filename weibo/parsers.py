@@ -666,7 +666,7 @@ class UserFriendParser(WeiboParser):
 
         for script in scripts:
             text = script.text
-            if text.startswith('FM.view') and "Pl_Official_LeftHisRelation__18" in text:
+            if text.startswith('FM.view') and ("Pl_Official_LeftHisRelation__18" in text or "Pl_Official_LeftHisRelation__41" in text):
                 text = text.replace('FM.view(', '')[:-1]
 		if text.endswith(';'):
 		    text = text[:-1]
@@ -676,7 +676,7 @@ class UserFriendParser(WeiboParser):
                 except ValueError, e:
                     return self._error(url, e)
                 domid = data['domid']
-                if domid == 'Pl_Official_LeftHisRelation__18':
+                if domid == 'Pl_Official_LeftHisRelation__18' or domid == 'Pl_Official_LeftHisRelation__41':
                     html = beautiful_soup(data['html'])
                 if 'relate' in decodes and decodes['relate'] == 'fans':
                     is_follow = False
