@@ -443,18 +443,18 @@ class UserInfoParser(WeiboParser):
             text = script.text
             
             if text.startswith('FM.view') and \
-               ("Pl_Official_LeftInfo__14" in text \
+               ("Pl_Official_LeftInfo__16" in text \
                 or "Pl_Official_Header__1" in text \
-                or "Pl_Official_RightGrow__15" in text \
+                or "Pl_Official_RightGrow__17" in text \
                 or "Pl_Official_LeftInfo__36" in text \
                 ):
                 text = text.replace('FM.view(', '')[:-1]
                 if text.endswith(';'):
 		    text = text[:-1]
-                
+
                 data = json.loads(text)
                 domid = data['domid']
-                if domid == 'Pl_Official_LeftInfo__14' or domid == 'Pl_Official_LeftInfo__36':
+                if domid == 'Pl_Official_LeftInfo__16' or domid == 'Pl_Official_LeftInfo__36':
                     info_soup = beautiful_soup(data['html'])
                     info_div = info_soup.find('div', attrs={'class': 'profile_pinfo'})
                     for block_div in info_div.find_all('div', attrs={'class': 'infoblock'}):
@@ -467,7 +467,7 @@ class UserInfoParser(WeiboParser):
                             edu_div = block_div
                         elif block_title == u'标签信息':
                             tags_div = block_div
-                elif domid == 'Pl_Official_RightGrow__15':
+                elif domid == 'Pl_Official_RightGrow__17':
                     right_soup = beautiful_soup(data['html'])
                     right_div = right_soup.find('div', attrs={'class': 'prm_app_pinfo'})
                     
