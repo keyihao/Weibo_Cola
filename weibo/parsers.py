@@ -439,14 +439,18 @@ class UserInfoParser(WeiboParser):
         weibo_ul = None
         rank_div = None
         credit_div = None
+        head_pic_div = None
+        user_atten_div = None
         for script in soup.find_all('script'):
             text = script.text
             
             if text.startswith('FM.view') and \
-               ("Pl_Official_LeftInfo__16" in text \
+               ("Pl_Official_LeftInfo__17" in text \
                 or "Pl_Official_Header__1" in text \
                 or "Pl_Official_RightGrow__17" in text \
                 or "Pl_Official_LeftInfo__36" in text \
+                or "Pl_Official_LeftInfo__41" in text \
+                or "Pl_Core_Header__1" in text \
                 ):
                 text = text.replace('FM.view(', '')[:-1]
                 if text.endswith(';'):
@@ -454,7 +458,8 @@ class UserInfoParser(WeiboParser):
 
                 data = json.loads(text)
                 domid = data['domid']
-                if domid == 'Pl_Official_LeftInfo__16' or domid == 'Pl_Official_LeftInfo__36':
+                if domid == 'Pl_Official_LeftInfo__17' or domid == 'Pl_Official_LeftInfo__36'\
+                   or domid == 'Pl_Official_LeftInfo__41':
                     info_soup = beautiful_soup(data['html'])
                     info_div = info_soup.find('div', attrs={'class': 'profile_pinfo'})
                     for block_div in info_div.find_all('div', attrs={'class': 'infoblock'}):
@@ -484,6 +489,12 @@ class UserInfoParser(WeiboParser):
                     weibo_user.info.avatar = header_soup.find('div', attrs={'class': 'pf_head_pic'})\
                                                 .find('img')['src']
                     weibo_ul = header_soup.find('ul', attrs={'class': 'user_atten clearfix user_atten_s'})
+
+                elif domid == 'Pl_Core_Header__1':
+                    core_header_soup = beautiful_soup(data['html'])
+                    head_div = core_header_soup.find('div', attrs={'class': 'pf_head S_bg5 S_line1'})
+                    head_pic_div = head_div.find('div',attrs={'class': 'pf_head_pic'})
+                    user_atten_div = head_div.find('div',attrs={'class': 'user_atten'})
                    
             elif 'STK' in text:
                 text = text.replace('STK && STK.pageletM && STK.pageletM.view(', '')[:-1]
@@ -510,7 +521,15 @@ class UserInfoParser(WeiboParser):
                     soup = beautiful_soup(data['html'])
                     weibo_user.info.avatar = soup.find('img')['src']
                     weibo_ul = soup.find('ul', attrs={'class': 'user_atten clearfix user_atten_m'})
-        
+                elif pid == 'pl_leftNav_profilePersonal':
+                    if weibo_user.info.avatar is None:
+                        soup = beautiful_soup(data['html'])
+                        weibo_user.info.avatar = soup.find('div',attrs={'class': 'face_infor'}).find('img')['src']
+                        weibo_user.info.nickname = soup.find('div',attrs={'class': 'face_infor'}).find('a',attrs={'class': 'logo_img'})['title']
+                elif pid == 'pl_content_litePersonInfo':
+                    soup = beautiful_soup(data['html'])
+                    weibo_ul = soup.find('ul', attrs={'class': 'user_atten clearfix'})
+
         profile_map = {
             u'昵称': {'field': 'nickname'},
             u'真实姓名': {'field': 'realname'},
@@ -633,6 +652,21 @@ class UserInfoParser(WeiboParser):
             for div in tags_div.find_all(attrs={'class': 'con'}):
                 for a in div.find_all('a'):
                     weibo_user.info.tags.append(a.text)
+
+        if head_pic_div is not None and weibo_user.info.avatar is None:
+            weibo_user.info.avatar = head_pic_div.find('img')['src']
+            weibo_user.info.nickname = head_pic_div.find('img')['title']
+            
+        if weibo_ul is None and user_atten_div is not None:
+            for td in user_atten_div.find_all('td'):
+                k = td.find('span').text.strip()
+                v = td.find('strong').text.strip()
+                if k in weibo_map:
+                    func = (lambda s: s) \
+                            if 'func' not in weibo_map[k] \
+                            else weibo_map[k]['func']
+                    v = func(v)
+                    setattr(weibo_user.info, weibo_map[k]['field'], v)
                 
         weibo_user.save()
         self.logger.debug('parse %s finish' % url)
@@ -666,7 +700,7 @@ class UserFriendParser(WeiboParser):
 
         for script in scripts:
             text = script.text
-            if text.startswith('FM.view') and ("Pl_Official_LeftHisRelation__18" in text or "Pl_Official_LeftHisRelation__41" in text):
+            if text.startswith('FM.view') and ("Pl_Official_LeftHisRelation__19" in text or "Pl_Official_LeftHisRelation__41" in text):
                 text = text.replace('FM.view(', '')[:-1]
 		if text.endswith(';'):
 		    text = text[:-1]
@@ -676,7 +710,7 @@ class UserFriendParser(WeiboParser):
                 except ValueError, e:
                     return self._error(url, e)
                 domid = data['domid']
-                if domid == 'Pl_Official_LeftHisRelation__18' or domid == 'Pl_Official_LeftHisRelation__41':
+                if domid == 'Pl_Official_LeftHisRelation__19' or domid == 'Pl_Official_LeftHisRelation__41':
                     html = beautiful_soup(data['html'])
                 if 'relate' in decodes and decodes['relate'] == 'fans':
                     is_follow = False
@@ -690,6 +724,9 @@ class UserFriendParser(WeiboParser):
                 if data['pid'] == 'pl_relation_hisFans':
                     is_follow = False    
         
+        if html is None:
+            return [],[]
+
         bundles = []
         ul = None
         try:
