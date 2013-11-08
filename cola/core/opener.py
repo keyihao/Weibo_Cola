@@ -23,6 +23,7 @@ Created on 2013-5-17
 import urllib2
 import cookielib
 import gzip
+import httplib
 
 from cola.core.errors import DependencyNotInstalledError
 
@@ -55,6 +56,15 @@ class BuiltinOpener(Opener):
         
     
 class MechanizeOpener(Opener):
+    @staticmethod
+    def patch_http_response_read(func):
+        def inner(*args):
+            try:
+                return func(*args)
+            except httplib.IncompleteRead, e:
+                return e.partial
+        return inner
+
     def __init__(self, cookie_filename=None, user_agent=None):
         try:
             import mechanize
@@ -65,7 +75,9 @@ class MechanizeOpener(Opener):
             user_agent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
         
         self.browser = mechanize.Browser()
-        
+
+        httplib.HTTPResponse.read = self.patch_http_response_read(httplib.HTTPResponse.read)
+
         self.cj = cookielib.LWPCookieJar()
         if cookie_filename is not None:
             self.cj.load(cookie_filename)
